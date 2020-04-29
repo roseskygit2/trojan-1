@@ -35,6 +35,15 @@ fi
 function install_trojan(){
 systemctl stop firewalld
 systemctl disable firewalld
+CHECK=$(grep SELINUX= /etc/selinux/config | grep -v "#")
+if [ "$CHECK" == "SELINUX=enforcing" ]; then
+    sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+    setenforce 0
+fi
+if [ "$CHECK" == "SELINUX=permissive" ]; then
+    sed -i 's/SELINUX=permissive/SELINUX=disabled/g' /etc/selinux/config
+    setenforce 0
+fi
 yum -y install bind-utils wget unzip zip curl tar
 green "======================="
 yellow "请输入绑定到本VPS的域名"
@@ -55,7 +64,7 @@ if [ $real_addr == $local_addr ] ; then
 	cd /usr/share/nginx/html/
 	wget https://github.com/atrandys/v2ray-ws-tls/raw/master/web.zip
     	unzip web.zip
-	systemctl start nginx.service
+	systemctl restart nginx.service
 	#申请https证书
 	mkdir /usr/src/trojan-cert
 	curl https://get.acme.sh | sh
@@ -66,7 +75,8 @@ if [ $real_addr == $local_addr ] ; then
         --reloadcmd  "systemctl force-reload  nginx.service"
 	if test -s /usr/src/trojan-cert/fullchain.cer; then
         cd /usr/src
-	wget https://github.com/trojan-gfw/trojan/releases/download/v1.13.0/trojan-1.13.0-linux-amd64.tar.xz
+	#wget https://github.com/trojan-gfw/trojan/releases/download/v1.13.0/trojan-1.13.0-linux-amd64.tar.xz
+	wget https://github.com/trojan-gfw/trojan/releases/download/v1.14.0/trojan-1.14.0-linux-amd64.tar.xz
 	tar xf trojan-1.*
 	#下载trojan客户端
 	wget https://github.com/atrandys/trojan/raw/master/trojan-cli.zip
@@ -88,8 +98,8 @@ if [ $real_addr == $local_addr ] ; then
         "verify": true,
         "verify_hostname": true,
         "cert": "fullchain.cer",
-        "cipher": "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES256-SHA:RSA-AES128-GCM-SHA256:RSA-AES256-GCM-SHA384:RSA-AES128-SHA:RSA-AES256-SHA:RSA-3DES-EDE-SHA",
-        "sni": "",
+        "cipher_tls13":"TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384",
+	"sni": "",
         "alpn": [
             "h2",
             "http/1.1"
@@ -122,8 +132,8 @@ EOF
         "cert": "/usr/src/trojan-cert/fullchain.cer",
         "key": "/usr/src/trojan-cert/private.key",
         "key_password": "",
-        "cipher": "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256",
-        "prefer_server_cipher": true,
+        "cipher_tls13":"TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384",
+	"prefer_server_cipher": true,
         "alpn": [
             "http/1.1"
         ],
